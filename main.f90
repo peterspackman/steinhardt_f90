@@ -1,51 +1,95 @@
-program main
+program steinhardt_calculator
   use iso_fortran_env, only: real64
-  use spherical_harmonics
-  use wigner3j_module
+  use steinhardt_module
   implicit none
 
-  integer, parameter :: lmax = 5
-  real(real64), parameter :: pi = acos(-1.0_real64)
-  type(SphericalHarmonics) :: sh
-  complex(real64), allocatable :: coeffs(:)
-  real(real64), allocatable :: w3ja(:)
-  real(real64) :: theta, phi, w3j
-  real(real64) :: pos(3)
-  integer :: l, m, i
+  type(Steinhardt) :: stein
 
-  ! Initialize the spherical harmonics evaluator
-  sh = SphericalHarmonics(lmax)
-  allocate(coeffs(sh%nlm()))
+  real(real64), allocatable :: positions(:,:)
+  real(real64), allocatable :: q(:), w(:)
 
-  ! Evaluate spherical harmonics at a specific theta and phi
-  theta = pi / 3.0_real64
-  phi = pi / 4.0_real64
-  coeffs = sh%evaluate_cvec_theta_phi(theta, phi)
+  call stein%init(6)
 
-  write(*, '(A)') "Spherical Harmonics Coefficients (theta, phi):"
-  do l = 0, lmax
-    do m = -l, l
-      i = l * (l + 1) + m + 1
-      write(*, '(A, I2, A, I2, A, 2F12.6)') "Y(", l, ",", m, ") = ", coeffs(i)
-    end do
-  end do
+  ! Cubic symmetry
+  allocate(positions(3, 8))
+  positions(:, 1) =  [ 1,  1,  1]
+  positions(:, 2) =  [ 1,  1, -1]
+  positions(:, 3) =  [ 1, -1,  1]
+  positions(:, 4) =  [ 1, -1, -1]
+  positions(:, 5) =  [-1,  1,  1]
+  positions(:, 6) =  [-1,  1, -1]
+  positions(:, 7) =  [-1, -1,  1]
+  positions(:, 8) =  [-1, -1, -1]
 
-  ! Evaluate spherical harmonics at a specific position vector
-  pos = [0.5_real64, 0.5_real64, sqrt(2.0_real64) / 2.0_real64]
-  coeffs = sh%evaluate_cvec_pos(pos)
+  q = stein%compute_q(positions)
+  print *, "Cubic Q"
+  write(*, "(7F12.6)") q
 
-  write(*, '(A)') "Spherical Harmonics Coefficients (position vector):"
-  do l = 0, lmax
-    do m = -l, l
-      i = l * (l + 1) + m + 1
-      write(*, '(A, I2, A, I2, A, 2F12.6)') "Y(", l, ",", m, ") = ", coeffs(i)
-    end do
-  end do
+  w = stein%compute_w(positions)
+  print *, "Cubic W"
+  write(*, "(7F12.6)") w
 
-  w3j = wigner3j_single(2.0_real64, 2.0_real64, 2.0_real64, 0.0_real64, 0.0_real64,  0.0_real64)
-  write(*, '(A, F12.6, A, F12.6)') "Expected w3j", -sqrt(2.0 / 35.0), " found: ", w3j
-  w3ja = wigner3j(2.0_real64, 2.0_real64, 0.0_real64, 0.0_real64,  0.0_real64)
-  print *, w3ja
-      
+  deallocate(positions)
 
-end program main
+  ! Octahedral symmetry
+  allocate(positions(3, 6))
+  positions(:, 1) =  [ 1,  0,  0]
+  positions(:, 2) =  [-1,  0,  0]
+  positions(:, 3) =  [ 0,  1,  0]
+  positions(:, 4) =  [ 0, -1,  0]
+  positions(:, 5) =  [ 0,  0,  1]
+  positions(:, 6) =  [ 0,  0, -1]
+
+  q = stein%compute_q(positions)
+  print *, "Octahedral Q"
+  write(*, "(7F12.6)") q
+
+  w = stein%compute_w(positions)
+  print *, "Octahedral W"
+  write(*, "(7F12.6)") w
+
+  deallocate(positions)
+
+  ! Tetrahedral symmetry
+  allocate(positions(3, 4))
+  positions(:,1) = [ 1.0_real64,  0.0_real64, -1.0_real64 / sqrt(2.0_real64) ]
+  positions(:,2) = [-1.0_real64,  0.0_real64, -1.0_real64 / sqrt(2.0_real64) ]
+  positions(:,3) = [ 0.0_real64,  1.0_real64,  1.0_real64 / sqrt(2.0_real64) ]
+  positions(:,4) = [ 0.0_real64, -1.0_real64,  1.0_real64 / sqrt(2.0_real64) ]
+
+  q = stein%compute_q(positions)
+  print *, "Tetrahedral Q"
+  write(*, "(7F12.6)") q
+
+  w = stein%compute_w(positions)
+  print *, "Tetrahedral W"
+  write(*, "(7F12.6)") w
+
+  deallocate(positions)
+
+  ! Icosahedral symmetry
+  allocate(positions(3, 12))
+  positions(:,1)  = [ 0.0_real64,  1.0_real64,  0.5_real64 * (1.0_real64 + sqrt(5.0_real64)) ]
+  positions(:,2)  = [ 0.0_real64,  1.0_real64, -0.5_real64 * (1.0_real64 + sqrt(5.0_real64)) ]
+  positions(:,3)  = [ 0.0_real64, -1.0_real64,  0.5_real64 * (1.0_real64 + sqrt(5.0_real64)) ]
+  positions(:,4)  = [ 0.0_real64, -1.0_real64, -0.5_real64 * (1.0_real64 + sqrt(5.0_real64)) ]
+  positions(:,5)  = [ 1.0_real64,  0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64 ]
+  positions(:,6)  = [ 1.0_real64, -0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64 ]
+  positions(:,7)  = [-1.0_real64,  0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64 ]
+  positions(:,8)  = [-1.0_real64, -0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64 ]
+  positions(:,9)  = [ 0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64,  1.0_real64 ]
+  positions(:,10) = [ 0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64, -1.0_real64 ]
+  positions(:,11) = [-0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64,  1.0_real64 ]
+  positions(:,12) = [-0.5_real64 * (1.0_real64 + sqrt(5.0_real64)), 0.0_real64, -1.0_real64 ]
+
+  q = stein%compute_q(positions)
+  print *, "Icosahedral Q"
+  write(*, "(7F12.6)") q
+
+  w = stein%compute_w(positions)
+  print *, "Icosahedral W"
+  write(*, "(7F12.6)") w
+
+  deallocate(positions)
+
+end program steinhardt_calculator

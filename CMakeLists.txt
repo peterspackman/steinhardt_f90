@@ -9,6 +9,7 @@ set(CMAKE_Fortran_FLAGS "-Wall -Wextra -Wpedantic -std=f2008")
 set(SOURCES
     legendre.f90
     spherical_harmonics.f90
+    steinhardt.f90
     wigner3j.f90
     main.f90
 )

@@ -18,7 +18,7 @@ contains
     real(real64) :: l1min, l1max, l1, an, prev_an, beta
     integer :: size, i, j, k, s
     real(real64) :: l1_mid_minus_one, l1_mid, l1_mid_plus_one, lambda
-    real(real64) :: sum, c1
+    real(real64) :: tot, c1
     logical :: av
 
     huge_sentinel = sqrt(sqrt(huge_value / 20.0_real64))
@@ -104,7 +104,7 @@ contains
             an = alpha_term_backward(l1, l2, l3, m1, m2, m3)
             beta = beta_term_backward(l1, l2, l3, m1)
 
-            vec(j) = an * vec(j + 1) + beta * vec(j + 2)
+            vec(j) = an * vec(j + 2) + beta * vec(j + 2)
 
             if (abs(vec(j)) > huge_sentinel) then
               vec(j:size) = vec(j:size) / huge_sentinel
@@ -114,21 +114,21 @@ contains
           end do
 
           lambda = (l1_mid_plus_one * vec(j + 2) + l1_mid * vec(j + 1) + l1_mid_minus_one * vec(j)) / &
-                   (l1_mid_plus_one**2 + l1_mid**2 + l1_mid_minus_one**2)
+            (l1_mid_plus_one * l1_mid_plus_one + l1_mid * l1_mid + l1_mid_minus_one * l1_mid_minus_one)
 
-          vec(1:j) = vec(1:j) * lambda
+          vec(1:j-1) = vec(1:j-1) * lambda
         end if
       end if
     end if
 
-    sum = 0.0_real64
+    tot = 0.0_real64
     do k = 1, size
-      sum = sum + (2.0_real64 * (l1min + real(k - 1, real64)) + 1.0_real64) * vec(k)**2
+      tot = tot + (2.0_real64 * (l1min + real(k - 1, real64)) + 1.0_real64) * vec(k) * vec(k)
     end do
 
     s = merge(-1, 1, vec(size) < 0.0_real64)
     c1 = (-1.0_real64)**(int(l2 - l3 - m1)) * s
-    vec = vec * c1 / sqrt(sum)
+    vec = vec * c1 / sqrt(tot)
 
   end function wigner3j
 
