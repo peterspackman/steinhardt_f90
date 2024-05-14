@@ -28,6 +28,7 @@ module steinhardt_module
     procedure :: compute_w => Steinhardt_compute_w
     procedure :: compute_qlm => Steinhardt_compute_qlm
     procedure :: precompute_wigner3j_coefficients => Steinhardt_precompute_wigner3j_coefficients
+    procedure :: compute_q_neighbor_products => Steinhardt_compute_q_neighbor_products
     procedure :: size => Steinhardt_size
     procedure :: nlm => Steinhardt_nlm
   end type Steinhardt
@@ -83,7 +84,7 @@ contains
       q(l+1) = 0.0_real64
       ql = 0.0_real64
       do m = -l, l
-        ql = ql + abs(qlm(idx)) ** 2
+        ql = ql + abs(qlm(idx) ** 2)
         idx = idx + 1
       end do
 
@@ -155,6 +156,60 @@ contains
       w(l+1) = w(l+1) + real(qlm(idx1) * qlm(idx2) * qlm(idx3) * w3j, real64)
     end do
   end function Steinhardt_compute_w
+
+  function Steinhardt_compute_q_neighbor_products(self, positions, neighbor_list) result(q)
+  class(Steinhardt), intent(inout) :: self
+      real(real64), intent(in) :: positions(:,:)
+      integer, intent(in) :: neighbor_list(:,:)
+      real(real64), allocatable :: q(:, :)
+
+      integer :: num_atoms, num_neighbors, i, j, k, idx, l, m
+      complex(real64) :: tmp
+      complex(real64), allocatable :: qlm(:,:)
+      real(real64), allocatable :: rvecs(:, :)
+      real(real64) :: norm_i, norm_k
+
+      num_atoms = size(positions, 2)
+      num_neighbors = size(neighbor_list, 1)
+
+      allocate(rvecs(3, num_neighbors))
+      allocate(q(self%m_lmax + 1, num_atoms))
+      q = 0.0_real64
+      allocate(qlm(self%m_harmonics%nlm(), num_atoms))
+
+      do i = 0, num_atoms
+          do j = 1, num_neighbors
+              k = neighbor_list(j, i)
+              if (k == -1) exit
+              rvecs(:, j) = positions(:, k) - positions(:, i)
+          end do
+          qlm(:, i) = self%compute_qlm(rvecs(:, :j-1))
+      end do
+
+      do i = 1, num_atoms
+          do j = 1, num_neighbors
+              k = neighbor_list(j, i)
+              if (k == -1) exit
+              idx = 1
+              do l = 0, self%m_lmax
+                  norm_i = 0.0d0
+                  norm_k = 0.0d0
+                  tmp = 0.0d0
+                  do m = -l, l
+                      tmp = tmp + qlm(idx, i) * conjg(qlm(idx, k))
+                      norm_i = norm_i + qlm(idx, i) * conjg(qlm(idx, i))
+                      norm_k = norm_k + qlm(idx, k) * conjg(qlm(idx, k))
+                      idx = idx + 1
+                  end do
+                  q(l + 1, i) = q(l + 1, i) + real(tmp) / (sqrt(norm_i) * sqrt(norm_k))
+              end do
+          end do
+          q(:, i) = q(:, i) / (j - 1)
+      end do
+      deallocate(rvecs)
+      deallocate(qlm)
+
+  end function Steinhardt_compute_q_neighbor_products
 
   integer function Steinhardt_size(self)
   class(Steinhardt), intent(in) :: self

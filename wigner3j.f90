@@ -22,7 +22,7 @@ contains
     logical :: av
 
     huge_sentinel = sqrt(sqrt(huge_value / 20.0_real64))
-    tiny_sentinel = sqrt(tiny_value)
+    tiny_sentinel = sqrt(tiny_value * 2)
 
     if (.not. (abs(m1 + m2 + m3) < eps .and. &
                abs(m2) <= l2 + eps .and. &
@@ -123,7 +123,7 @@ contains
 
     tot = 0.0_real64
     do k = 1, size
-      tot = tot + (2.0_real64 * (l1min + real(k - 1, real64)) + 1.0_real64) * vec(k) * vec(k)
+      tot = tot + (2.0_real64 * (l1min + real(k - 1, real64)) + 1.0_real64) * (vec(k)**2)
     end do
 
     s = merge(-1, 1, vec(size) < 0.0_real64)
